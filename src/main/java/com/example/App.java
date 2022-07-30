@@ -6,6 +6,8 @@ import kr.dogfoot.hwplib.tool.textextractor.*;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class App 
 {
@@ -28,6 +30,9 @@ public class App
 
     public static final String exit     = "\u001B[0m" ;
 
+    private static final Pattern scenePattern = Pattern.compile("S*#*[0-9]+\\.*[^가-힣][^a-zA-z]"); //씬넘버 정규식
+    private static final Pattern timePattern = Pattern.compile("낮?밤?(새벽)?(저녁)?(아침)?");
+
     public static void main(String[] args) throws Exception
     {
         String name1 = "술도녀 10부(완).hwp";
@@ -36,11 +41,13 @@ public class App
         String name4 = "흙역사-대본1부-수정.hwp";
         String name5 = "[오펜] 이은희_엔딩크레딧 1부.hwp";
         String name6 = "test.hwp";
+
+        boolean a = timePattern.matcher("이밤이 가").matches();
         
         ArrayList<SceneInfo> sceneInfoList = new ArrayList<>();
         sceneInfoList.add(new SceneInfo("1","home","day"));
     
-        String filename = "script" + File.separator + name5;
+        String filename = "script" + File.separator + name3;
         HWPFile hwpFile = HWPReader.fromFile(filename);
 
         TextExtractOption opt = new TextExtractOption();
@@ -50,15 +57,29 @@ public class App
        
         String str = TextExtractor.extract(hwpFile, opt);
         // String str = TextExtractor.extract(hwpFile, TextExtractMethod.AppendControlTextAfterParagraphText);
-        
+                
         
         String[] line = str.split("\n");
-        
+        for (String l : line) {
+            String[] phrase = l.strip().split(" ", 2);
+            Matcher sceneMatcher = scenePattern.matcher(phrase[0]);
+            if (sceneMatcher.matches()) {
+                Matcher timeMatcher = timePattern.matcher(phrase[1]);
+                String time = timeMatcher.matches() ? timeMatcher.group() : "";
+                String place = phrase[1].replaceAll(time, "");
+                sceneInfoList.add(new SceneInfo(phrase[0],place,time));
+            }
+
+            
+        }
 
         FileOutputStream output = new FileOutputStream("c:\\Users\\kimbk101\\demo\\in.txt");
         OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
         BufferedWriter out = new BufferedWriter(writer);
         out.write(str);
+        for (SceneInfo sci: sceneInfoList) {
+            out.write(sci.toString()+"\n");
+        }
         out.close();
 
         // str = str.replaceAll(" ", red+"."+exit);
