@@ -1,9 +1,10 @@
 package com.example;
 
 public class SceneInfo {
-    private String sceneNumber;
-    private String place;
-    private String time;
+    private String sceneNumber ="";
+    private String place ="";
+    private String time ="";
+    private String content = "";
 
     public SceneInfo() {}
     public SceneInfo(String sceneNumber, String place, String time) {
@@ -18,6 +19,10 @@ public class SceneInfo {
         this.time = time;
     }
 
+    public void setContent(String content) {
+        this.content = this.content + content;
+    }
+
     public String getSceneNumber() {
         return sceneNumber;
     }
@@ -30,7 +35,11 @@ public class SceneInfo {
         return time;
     }
 
-    public String toString() {
+    public String getContent() {
+        return content;
+    }
+
+    public String getSceneInfo() {
         StringBuffer sb = new StringBuffer();
         sb.append(sceneNumber).append("/").append(place).append("/").append(time);
         return sb.toString();

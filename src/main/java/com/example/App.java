@@ -27,11 +27,11 @@ public class App
 	public static final String BACKGROUND_PURPLE = "\u001B[45m";     
 	public static final String BACKGROUND_CYAN = "\u001B[46m";     
 	public static final String BACKGROUND_WHITE = "\u001B[47m";
-
     public static final String exit     = "\u001B[0m" ;
 
-    private static final Pattern scenePattern = Pattern.compile("S*#*[0-9]+\\.*[^가-힣][^a-zA-z]"); //씬넘버 정규식
-    private static final Pattern timePattern = Pattern.compile("낮?밤?(새벽)?(저녁)?(아침)?");
+    private static final Pattern scenePattern = Pattern.compile("^S*#*[0-9]+\\.*\\s"); //씬넘버 정규식
+    private static final Pattern timePattern = Pattern.compile("\\s?.?(낮|밤|(새벽)|(저녁)|(아침)|(해질녘)|(오전)|(오후)|D|N).?\\s?"); //시간대 표현모음
+    private boolean sceneStart;
 
     public static void main(String[] args) throws Exception
     {
@@ -40,14 +40,13 @@ public class App
         String name3 = "파더_당신의별_1부_제이에스픽쳐스.hwp";
         String name4 = "흙역사-대본1부-수정.hwp";
         String name5 = "[오펜] 이은희_엔딩크레딧 1부.hwp";
-        String name6 = "test.hwp";
-
-        boolean a = timePattern.matcher("이밤이 가").matches();
+        String name6 = "제갈길1부(줄임초).hwp";
         
+
         ArrayList<SceneInfo> sceneInfoList = new ArrayList<>();
-        sceneInfoList.add(new SceneInfo("1","home","day"));
+        boolean sceneStart = false;
     
-        String filename = "script" + File.separator + name3;
+        String filename = "script-parsing/script" + File.separator + name4;
         HWPFile hwpFile = HWPReader.fromFile(filename);
 
         TextExtractOption opt = new TextExtractOption();
@@ -56,30 +55,48 @@ public class App
         opt.setInsertParaHead(true);
        
         String str = TextExtractor.extract(hwpFile, opt);
-        // String str = TextExtractor.extract(hwpFile, TextExtractMethod.AppendControlTextAfterParagraphText);
-                
         
         String[] line = str.split("\n");
         for (String l : line) {
-            String[] phrase = l.strip().split(" ", 2);
-            Matcher sceneMatcher = scenePattern.matcher(phrase[0]);
-            if (sceneMatcher.matches()) {
-                Matcher timeMatcher = timePattern.matcher(phrase[1]);
-                String time = timeMatcher.matches() ? timeMatcher.group() : "";
-                String place = phrase[1].replaceAll(time, "");
-                sceneInfoList.add(new SceneInfo(phrase[0],place,time));
-            }
+            String phrase = l.strip();
+            Matcher sceneMatcher = scenePattern.matcher(phrase); 
+            if (sceneMatcher.find()) { //씬넘버 형식과 일치하는지 확인
+                String sceneNumber = "";
+                String place = "-";
+                String time = "-";
 
-            
+                sceneNumber = sceneMatcher.group().replaceAll("[^0-9]", "");
+                phrase = phrase.replaceAll(sceneMatcher.group(), "");
+                if (!sceneStart && sceneNumber.compareTo("1")>0) { //대본 표지등에 날짜표현(2020.) 필터를 위함
+                    continue;
+                } else {
+                    sceneStart = true;
+                }
+
+                Matcher timeMatcher = timePattern.matcher(phrase);
+                if (timeMatcher.find()) { //시간 표현 형식과 일치하는지 확인
+                    place = phrase.replace(timeMatcher.group(), "");
+                    time = timeMatcher.group(1);
+                } else {
+                    place = phrase.strip();
+                }
+                sceneInfoList.add(new SceneInfo(sceneNumber,place,time));
+            }
+            else if (sceneStart) {
+                SceneInfo currScene = sceneInfoList.get(sceneInfoList.size()-1);
+                currScene.setContent(phrase+"\n");
+            }
         }
 
-        FileOutputStream output = new FileOutputStream("c:\\Users\\kimbk101\\demo\\in.txt");
+        FileOutputStream output = new FileOutputStream("c:\\Users\\kbk10\\parsing\\script-parsing\\in.txt");
         OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
         BufferedWriter out = new BufferedWriter(writer);
-        out.write(str);
+
         for (SceneInfo sci: sceneInfoList) {
-            out.write(sci.toString()+"\n");
+            out.write(sci.getSceneInfo()+"\n");
+            out.write(sci.getContent()+"\n");
         }
+        
         out.close();
 
         // str = str.replaceAll(" ", red+"."+exit);
