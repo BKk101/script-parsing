@@ -31,7 +31,7 @@ public class App
 
     private static final Pattern scenePattern = Pattern.compile("^S*#*[0-9]+\\.*\\s"); //씬넘버 정규식
     private static final Pattern timePattern = Pattern.compile("\\s?.?(낮|밤|(새벽)|(저녁)|(아침)|(해질녘)|(오전)|(오후)|D|N).?\\s?"); //시간대 표현모음
-    private boolean sceneStart;
+    private static boolean sceneStart;
 
     public static void main(String[] args) throws Exception
     {
@@ -42,11 +42,10 @@ public class App
         String name5 = "[오펜] 이은희_엔딩크레딧 1부.hwp";
         String name6 = "제갈길1부(줄임초).hwp";
         
-
         ArrayList<SceneInfo> sceneInfoList = new ArrayList<>();
-        boolean sceneStart = false;
+        sceneStart = false;
     
-        String filename = "script-parsing/script" + File.separator + name4;
+        String filename = "script-parsing/script" + File.separator + name6;
         HWPFile hwpFile = HWPReader.fromFile(filename);
 
         TextExtractOption opt = new TextExtractOption();
@@ -57,6 +56,7 @@ public class App
         String str = TextExtractor.extract(hwpFile, opt);
         
         String[] line = str.split("\n");
+        SceneInfo currScene = new SceneInfo();
         for (String l : line) {
             String phrase = l.strip();
             Matcher sceneMatcher = scenePattern.matcher(phrase); 
@@ -67,7 +67,7 @@ public class App
 
                 sceneNumber = sceneMatcher.group().replaceAll("[^0-9]", "");
                 phrase = phrase.replaceAll(sceneMatcher.group(), "");
-                if (!sceneStart && sceneNumber.compareTo("1")>0) { //대본 표지등에 날짜표현(2020.) 필터를 위함
+                if (!sceneStart && !sceneNumber.equals("1") && !sceneNumber.equals("0")) { //대본 표지등에 날짜표현(2020.) 필터를 위함
                     continue;
                 } else {
                     sceneStart = true;
@@ -81,9 +81,9 @@ public class App
                     place = phrase.strip();
                 }
                 sceneInfoList.add(new SceneInfo(sceneNumber,place,time));
+                currScene = sceneInfoList.get(sceneInfoList.size()-1);
             }
             else if (sceneStart) {
-                SceneInfo currScene = sceneInfoList.get(sceneInfoList.size()-1);
                 currScene.setContent(phrase+"\n");
             }
         }
