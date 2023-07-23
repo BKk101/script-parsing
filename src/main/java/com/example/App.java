@@ -3,8 +3,13 @@ package com.example;
 import kr.dogfoot.hwplib.object.HWPFile;
 import kr.dogfoot.hwplib.reader.HWPReader;
 import kr.dogfoot.hwplib.tool.textextractor.*;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+
 
 import java.io.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -46,19 +51,31 @@ public class App {
         String name5 = "[오펜] 이은희_엔딩크레딧 1부.hwp";
         String name6 = "제갈길1부(줄임초).hwp";
         String name7 = "술도녀 11부(최종).hwp";
+        String name8 = "pdf sample.pdf";
 
         ArrayList<SceneInfo> sceneInfoList = new ArrayList<>();
         sceneStart = false;
 
-        String filename = "script" + File.separator + name1;
-        HWPFile hwpFile = HWPReader.fromFile(filename);
+        String filename = "script" + File.separator + name8;
+        String str = "";
 
-        TextExtractOption opt = new TextExtractOption();
-        opt.setWithControlChar(true);
-        opt.setMethod(TextExtractMethod.AppendControlTextAfterParagraphText);
-        opt.setInsertParaHead(true);
+        if (filename.substring(filename.length()-3).equals("hwp")) {
+            HWPFile hwpFile = HWPReader.fromFile(filename);
 
-        String str = TextExtractor.extract(hwpFile, opt);
+            TextExtractOption opt = new TextExtractOption();
+            opt.setWithControlChar(true);
+            opt.setMethod(TextExtractMethod.AppendControlTextAfterParagraphText);
+            opt.setInsertParaHead(true);
+            str = TextExtractor.extract(hwpFile, opt);
+        }  else {
+            PDDocument document = Loader.loadPDF(new File(filename));
+            PDFTextStripper stripper = new PDFTextStripper();
+
+            stripper.setSortByPosition(true);
+            stripper.setLineSeparator("\n");
+            stripper.setWordSeparator("\t");
+            str = stripper.getText(document);
+        }
 
         String[] line = str.split("\n");
         ArrayList<String> ori = new ArrayList<>();
@@ -109,14 +126,15 @@ public class App {
         OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
         BufferedWriter out = new BufferedWriter(writer);
 
-        Integer i = 0;
-        for (SceneInfo sci : sceneInfoList) {
-            out.write(sci.getPlace() + "\n");
-            out.write(ori.get(i) + "\n");
-            i += 1;
-            // out.write(sci.getContent() + "\n");
-        }
+        // Integer i = 0;
+        // for (SceneInfo sci : sceneInfoList) {
+        //     out.write(sci.getPlace() + "\n");
+        //     out.write(ori.get(i) + "\n");
+        //     i += 1;
+        //     // out.write(sci.getContent() + "\n");
+        // }
 
+        out.write(str);
         out.close();
 
         // str = str.replaceAll(" ", red+"."+exit);
